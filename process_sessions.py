@@ -107,8 +107,15 @@ if __name__ == '__main__':
 
     args = sys.argv
     if len(args) < 5:
+        print()
         print("How to Run:")
+        print()
         print("python3 process_sessions.py <do_log_path> <output_dir_path> <act24_file> <file_id>")
+        print("\t<do_log_path> - path to do_log_final.csv")
+        print("\t<output_dir_path> - path to directory to store output files in")
+        print("\t<act24_file> - processed act24 data (time,x,y,z)")
+        print("\t<file_id> - id for given act24 file (num in file name)")
+        print()
         sys.exit()
 
     do_log = args[1]
