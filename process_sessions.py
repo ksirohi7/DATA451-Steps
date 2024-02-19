@@ -61,7 +61,6 @@ def get_sessions(do_log_file, output_dir_path, act24_file, id):
 
     do_log.close()
 
-
     # read
     act24_fin = open(act24_file, 'r')
     act24_fin.readline() # read header
@@ -78,7 +77,7 @@ def get_sessions(do_log_file, output_dir_path, act24_file, id):
     for line in act24_fin:
         obs_tokens = line.split(',')
         # read in obs datetime
-        obs_dt = datetime.datetime.strptime(obs_tokens[0], '%Y/%m/%d %H:%M:%S.%f')
+        obs_dt = datetime.datetime.strptime(obs_tokens[0], '%Y-%m-%d %H:%M:%S.%f')
 
         # if obs datetime is within session 1 --> output to session 1 file
         if (lb1 <= obs_dt <= ub1):
