@@ -13,24 +13,31 @@ def map_time_military(time):
             return f"{new_hour}:{time_split[1]}:{time_split[2]}"
     return time[:-3]
 
+# def get_session_bounds(tokens):
+#     m = int(tokens[2])
+#     d = int(tokens[3])
+#     y = int(tokens[4])
+#     date = str(datetime.date(year=y, month=m, day=d))
+#
+#     # get military time from am/pm time
+#     st = tokens[5]
+#     et = tokens[6]
+#     mst = map_time_military(st)
+#     met = map_time_military(et)
+#
+#     # get date time as string
+#     sdt_str = f'{date} {mst}'
+#     edt_str = f'{date} {met}'
+#
+#     sdt = datetime.datetime.strptime(sdt_str, '%Y-%m-%d %H:%M:%S')
+#     edt = datetime.datetime.strptime(edt_str, '%Y-%m-%d %H:%M:%S')
+#
+#     # return sdt, edt
+#     return sdt, edt
+
 def get_session_bounds(tokens):
-    m = int(tokens[2])
-    d = int(tokens[3])
-    y = int(tokens[4])
-    date = str(datetime.date(year=y, month=m, day=d))
-
-    # get military time from am/pm time
-    st = tokens[5]
-    et = tokens[6]
-    mst = map_time_military(st)
-    met = map_time_military(et)
-
-    # get date time as string
-    sdt_str = f'{date} {mst}'
-    edt_str = f'{date} {met}'
-
-    sdt = datetime.datetime.strptime(sdt_str, '%Y-%m-%d %H:%M:%S')
-    edt = datetime.datetime.strptime(edt_str, '%Y-%m-%d %H:%M:%S')
+    sdt = datetime.datetime.strptime(tokens[2], '%Y-%m-%d %H:%M:%S')
+    edt = datetime.datetime.strptime(tokens[3].replace("\n", ""), '%Y-%m-%d %H:%M:%S')
 
     # return sdt, edt
     return sdt, edt
@@ -58,6 +65,9 @@ def get_sessions(do_log_file, output_dir_path, act24_file, id):
 
     sess_2 = get_session_bounds(dict["2"])
     lb2, ub2 = sess_2
+
+    # print(f"{lb1, ub1}")
+    # print(f"{lb2, ub2}")
 
     do_log.close()
 
@@ -89,8 +99,6 @@ def get_sessions(do_log_file, output_dir_path, act24_file, id):
 
     fout1.close()
     fout2.close()
-
-
 
 
 
