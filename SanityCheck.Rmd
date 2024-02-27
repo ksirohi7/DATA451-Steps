@@ -1,0 +1,211 @@
+---
+title: 'Sanity Check: Visualizations'
+author: "Jadyn Ellis"
+date: "2024-02-23"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning=FALSE)
+library(tidyverse)
+library(cowplot)
+library(viridis)
+library(ggthemes)
+library(extrafont)
+loadfonts(device = "win")
+
+# broad activity type, posture, walking/not walking
+```
+
+# Read In Data
+```{r}
+steps <- read.csv("merged_groundtruth_secbysec.csv")
+steps$date_time <- strftime(as.POSIXct(steps$date_time), format="%Y-%m-%d %H:%M:%S")
+```
+
+# Functions
+```{r}
+get_sanity_plots <- function(data, ID, session) {
+  # Get subset of the data only containing specified id and observation number
+  test <- steps %>%
+    filter(id == ID & observation == session) 
+  test[,"cumul_steps"] <- cumsum(test$step)
+  test$date_time <- as.POSIXct(test$date_time)
+  test <- arrange(test, date_time)
+  # Get the data in the form: <id> <observation> <start> <end> <sedentary or not>
+  gantt_data_walk <- get_gantt_df(test, ID, session, "walking_not")
+  gantt_data_sed <- get_gantt_df(test, ID, session, "sedentary_not")
+  gantt_data_posture <- get_gantt_df(test, ID, session, "posture")
+  gantt_data_act <- get_gantt_df(test, ID, session, "broad_activity_type")
+  
+  
+  # Hardcoded for nature of the data, may want to change to be more general to be applied to data in the future
+  if (ID == 154 & session == 2) {
+    db <- "1 min"
+  }
+  else {
+    db <- "30 min"
+  }
+  # Get total steps of session and corresponding time with an adjustment for label
+  tot_steps <- max(test$cumul_steps)
+  end <- max(test$date_time) 
+  
+  # Create Cumulative Steps Plot
+  p1 <- ggplot(test) +
+  theme_bw()+
+  geom_line(aes(x=date_time, y=cumul_steps), size=0.5) +
+  labs(x="", y="", 
+       title="Cumulative Steps", 
+       subtitle=sprintf("Id = %d, Session = %d", ID, session)) +
+  scale_x_datetime(date_breaks=db,
+                   date_labels = "%H:%M:%S") +
+  annotate("text",
+           family=("serif"), 
+            label=sprintf("Total Steps = %d", tot_steps), 
+            x=end, 
+            y=10, 
+            size=4,
+            vjust=-0.5,
+            hjust=1)+
+  theme(plot.title = element_text(hjust = 0.5, size=18, face="bold"),
+        plot.subtitle = element_text(hjust=0.5, size=14),
+        axis.text.x=element_text(size=12),
+        axis.text.y=element_text(size=12),
+        text=element_text(family="serif"),
+        plot.margin = margin(10, 20, 10, 10))
+  
+  # Create Gantt Chart of Walking vs Not Walking
+  p2 <- ggplot(gantt_data_walk, aes(x=start, xend=end, y=variable_value, yend=variable_value, color=variable_value)) +
+  theme_bw()+ 
+  geom_segment(size=6) + 
+  labs(x='', 
+       y="") +
+  scale_x_datetime(date_breaks=db,
+                   date_labels = "%H:%M:%S") +
+  theme(#axis.text.y=element_blank(),
+        axis.text.x=element_text(size=12),
+        legend.title = element_blank(),
+        legend.position="none",
+        text=element_text(family="serif"),
+        plot.title = element_text(hjust = 0.5))
+  
+  # Create Gantt Chart of Sedentary or Not Sedentary
+  p3 <- ggplot(gantt_data_sed, aes(x=start, xend=end, y=variable_value, yend=variable_value, color=variable_value)) +
+  theme_bw()+ 
+  geom_segment(size=6) + 
+  labs(x='', 
+       y="") +
+  scale_x_datetime(date_breaks=db,
+                   date_labels = "%H:%M:%S") +
+  theme(#axis.text.y=element_blank(),
+        axis.text.x=element_text(size=12),
+        axis.text.y=element_text(size=12),
+        legend.title = element_blank(),
+        legend.position="none",
+        text=element_text(family="serif"),
+        plot.title = element_text(hjust = 0.5))
+  
+  # Create Gantt Chart of Posture
+  p4 <- ggplot(gantt_data_posture, aes(x=start, xend=end, y=variable_value, yend=variable_value, color=variable_value)) +
+  theme_bw()+ 
+  geom_segment(size=6) + 
+  labs(x='', 
+       y="") +
+  scale_x_datetime(date_breaks=db,
+                   date_labels = "%H:%M:%S") +
+  theme(#axis.text.y=element_blank(),
+        axis.text.x=element_text(size=12),
+        axis.text.y=element_text(size=12),
+        legend.title = element_blank(),
+        legend.position="none",
+        text=element_text(family="serif"),
+        plot.title = element_text(hjust = 0.5))
+  
+  # Create Gantt Chart of activity
+  p5 <- ggplot(gantt_data_act, aes(x=start, xend=end, y=variable_value, yend=variable_value, color=variable_value)) +
+  theme_bw()+ 
+  geom_segment(size=5) + 
+  labs(x='Time', 
+       y="") +
+  scale_x_datetime(date_breaks=db,
+                   date_labels = "%H:%M:%S") +
+  theme(#axis.text.y=element_blank(),
+        axis.text.x=element_text(size=12),
+        legend.title = element_blank(),
+        legend.position="none",
+        text=element_text(family="serif"),
+        plot.title = element_text(hjust = 0.5))
+  
+  
+  # Merge the two plots into a grid with aligned x axis
+  plot_grid(p1, p3, p4, align="v", ncol=1, rel_heights = c(1, 0.6, 0.75))
+  
+}
+```
+
+```{r}
+get_gantt_df <- function(test, ID, ses, variable) {
+  current <- "start"
+  id <- c()
+  observation <- c()
+  start <- c()
+  end <- c()
+  cum_steps <- c()
+  variable_value <- c()
+  
+  
+  for(i in 1:nrow(test)) {
+    row <- test[i,]
+    val <- row[[variable]]
+    if (val != current) {
+      # New row
+      id <- append(id, ID)
+      observation <- append(observation, ses)
+      start <- append(start, row$date_time)
+      variable_value <- append(variable_value, val)
+      current <- val
+      if (i != 1) {
+      #Update last row's end time
+      end <- append(end, row$date_time)
+      cum_steps <- append(cum_steps, row$cumul_steps)
+      }
+      
+    }
+    
+    if (i == nrow(test)) {
+      #Need to add an end time
+      end <- append(end, row$date_time)
+      cum_steps <- append(cum_steps, row$cumul_steps)
+    }
+  }
+
+  gantt_data <- data.frame(id, observation, start, end, variable_value, cum_steps)
+  gantt_data$start <- as.POSIXct(gantt_data$start)
+  gantt_data$end <- as.POSIXct(gantt_data$end)
+  
+  return(gantt_data)
+}
+```
+
+
+# Get All Sanity Check Plots for Column Types
+```{r}
+dis <- steps %>%
+  select(id, observation) %>%
+  distinct()
+```
+
+
+```{r}
+for(i in 1:nrow(dis)) {
+    row <- dis[i,]
+    print(get_sanity_plots(steps, row$id, row$observation))
+}
+```
+
+```{r}
+dis
+```
+
+
+
