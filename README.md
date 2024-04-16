@@ -2,7 +2,7 @@
 Code Storage :)
 
 ## File Descriptions
-SanityCheck.*: R code to generate sanity check plots
+- SanityCheck.*: R code to generate sanity check plots
 * Line plot of steps over time 
 * Posture bars
 
