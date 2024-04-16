@@ -3,8 +3,8 @@ Code Storage :)
 
 ## File Descriptions
 - SanityCheck.*: R code to generate sanity check plots
-* Line plot of steps over time 
-* Posture bars
+** Line plot of steps over time 
+** Posture bars
 
 act24_conversion.py: Add datetime column to each ACT24 participant file at 80Hz
 
