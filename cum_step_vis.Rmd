@@ -18,7 +18,7 @@ loadfonts(device = "win")
 
 
 ```{r}
-steps <- read.csv("merged_gt_by10sec_w_preds.csv")
+steps <- read.csv("new_full_predictions.csv")
 steps$time <- strftime(as.POSIXct(steps$time), format="%Y-%m-%d %H:%M:%S")
 ```
 
@@ -37,10 +37,13 @@ steps$sedentary_not <- steps$sedentary_not %>% str_remove_all("'")
 
 get_sanity_plots <- function(data, ID, session) {
   # Get subset of the data only containing specified id and observation number
-  test <- steps %>%
+  test <- data %>%
     filter(id == ID & observation == session) 
   test[,"cumul_steps"] <- cumsum(test$step)
   test[,"pred_cumul_steps"] <- cumsum(test$pred_steps)
+  test[,"pred_broad_steps"] <- cumsum(test$broad_steps)
+  test[,"pred_granular_steps"] <- cumsum(test$gran_steps)
+  test[,"pred_just_right_steps"] <- cumsum(test$just_right_steps)
   test$date_time <- as.POSIXct(test$time)
   test <- arrange(test, date_time)
   # Get the data in the form: <id> <observation> <start> <end> <sedentary or not>
@@ -50,38 +53,41 @@ get_sanity_plots <- function(data, ID, session) {
   gantt_data_act <- get_gantt_df(test, ID, session, "broad_activity_type")
   
   
-  # Hardcoded for nature of the data, may want to change to be more general to be applied to data in the future
-  if (ID == 154 & session == 2) {
-    db <- "1 min"
-  }
-  else {
-    db <- "30 min"
-  }
   # Get total steps of session and corresponding time with an adjustment for label
   tot_steps <- max(test$cumul_steps)
   end <- max(test$date_time) 
+  db <- "30 min"
   
   # Create Cumulative Steps Plot
   p1 <- ggplot(test) +
   theme_bw()+
   geom_line(aes(x=date_time, y=cumul_steps, color="Actual"), size=1) +
   geom_line(aes(x=date_time, y=pred_cumul_steps, color="UK Biobank Predicted"), size=1) +
+    geom_line(aes(x=date_time, y=pred_broad_steps, color="Keadle Trained Broad"), size=1) + 
+    geom_line(aes(x=date_time, y=pred_just_right_steps, color="Keadle Trained Less Categories"), size=1) +
+    geom_line(aes(x=date_time, y=pred_granular_steps, color="Keadle Trained Granular"), size=1) +
   labs(x="", y="",
        # title="Cumulative Steps",
        # subtitle=sprintf("Id = %d, Session = %d", ID, session)
        ) +
-
+  
   scale_x_datetime(date_breaks=db,
                    date_labels = "%H:%M:%S") +
-  scale_color_manual(name="", values = c("Actual" = "black", "UK Biobank Predicted" = "red"))+
+    #"Keadle Trained Walk/Not Walk" = "green", "Keadle Trained All Postures" = "blue")
+  scale_color_manual(name="", 
+                     values = c("Actual" = "#a74d4eff", 
+                                "UK Biobank Predicted" = "#1e619dff",
+                                "Keadle Trained Broad" = "#c08080ff", 
+                                "Keadle Trained Granular" = "#799943",
+                                "Keadle Trained Less Categories" = "black"))+
   theme(plot.title = element_text(hjust = 0.5, size=18, face="bold"),
         plot.subtitle = element_text(hjust=0.5, size=14),
-        axis.text.x=element_text(size=10),
-        axis.text.y=element_text(size=10),
+        axis.text.x=element_text(size=10, color="black"),
+        axis.text.y=element_text(size=10, color="black"),
         text=element_text(family="arial"),
         plot.margin = margin(10, 20, 10, 10),
         legend.position = "top",
-        legend.text = element_text(size=12))
+        legend.text = element_text(size=8))
   
   # Create Gantt Chart of Walking vs Not Walking
   p2 <- ggplot(gantt_data_walk, aes(x=start, xend=end, y=variable_value, yend=variable_value, color=variable_value)) +
@@ -123,21 +129,21 @@ get_sanity_plots <- function(data, ID, session) {
   scale_x_datetime(date_breaks=db,
                    date_labels = "%H:%M:%S") +
   theme(#axis.text.y=element_blank(),
-        axis.text.x=element_text(size=10),
-        axis.text.y=element_text(size=10),
+        axis.text.x=element_text(size=10, color="black"),
+        axis.text.y=element_text(size=10, color="black"),
         legend.title = element_blank(),
         legend.position="none",
         text=element_text(family="arial"),
         plot.title = element_text(hjust = 0.5)) +
-    scale_color_manual(values=c("walk with load" = "dodgerblue3",
+    scale_color_manual(values=c("walk with load" = "#799943",
                                "sitting" = "grey",
                                "lying" = "grey",
                                "kneeling/ squatting" = "grey",
                                "stretching" = "grey",
                                "walk" = "grey",
-                               "ascend stairs" = "grey",
-                               "descend stairs" = "grey",
-                               "running" = "grey",
+                               "ascend stairs" = "dodgerblue3",
+                               "descend stairs" = "dodgerblue3",
+                               "running" = "dodgerblue3",
                                "bike" = "grey",
                                "other sport movement" = "grey",
                                "muscle strengthening" = "grey",
@@ -224,17 +230,20 @@ dis <- steps %>%
 ```{r}
 for(i in 1:nrow(dis)) {
     row <- dis[i,]
+    print("ID")
+    print(row$id)
+    print("OBSERVATION")
+    print(row$observation)
     print(get_sanity_plots(steps, row$id, row$observation))
 }
 ```
 
+
 ```{r}
-dis
+#get_sanity_plots(steps, 134, 1)
 ```
 
 ```{r}
-get_sanity_plots(steps, 134, 1)
+get_sanity_plots(steps, 154, 2)
 ```
-
-
 
